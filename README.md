@@ -1,121 +1,103 @@
-#  AWS CloudFormation Lab  
-## EC2 + EBS + S3 Infrastructure Deployment
-
-![AWS](https://img.shields.io/badge/AWS-CloudFormation-orange)
-![IaC](https://img.shields.io/badge/Infrastructure%20as%20Code-Yes-blue)
-![Status](https://img.shields.io/badge/Project-Lab-green)
-
----
-
-##  Overview
-
-This project provisions infrastructure using **AWS CloudFormation**.
-
-###  Resources Deployed
-
 ```yaml
-Resources:
-  EC2Instance:
-    Type: AWS::EC2::Instance
-  SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-  EBSVolume:
-    Type: AWS::EC2::Volume
-  S3Bucket:
-    Type: AWS::S3::Bucket
+# ================================================================
+# AWS CLOUDFORMATION LAB
+# EC2 + EBS + S3 INFRASTRUCTURE DEPLOYMENT
+# ================================================================
+
+project:
+  name: ec2-ebs-s3-cloudformation-lab
+  type: infrastructure-as-code
+  platform: AWS
+  provisioning_tool: CloudFormation
+
+overview:
+  description: >
+    This project provisions AWS infrastructure using a CloudFormation template.
+    It demonstrates EC2 deployment, EBS attachment, S3 provisioning,
+    and basic networking/security configuration.
+
+resources_created:
+
+  security_group:
+    type: AWS::EC2::SecurityGroup
+    logical_name: InstanceSecurityGroup
+    inbound_rules:
+      - protocol: tcp
+        port: 22
+        source: 0.0.0.0/0   # ⚠ Open to world (lab only)
+
+  ec2_instance:
+    type: AWS::EC2::Instance
+    logical_name: MyInstance
+    instance_type: t2.micro
+    ami: ami-0f3caa1cf4417e51b  # region dependent
+
+  ebs_volume:
+    type: AWS::EC2::Volume
+    logical_name: MyVolume
+    size_gib: 10
+    availability_zone: same_as_instance
+
+  volume_attachment:
+    type: AWS::EC2::VolumeAttachment
+    logical_name: MyVolumeAttachment
+    device: /dev/sdf
+
+  s3_bucket:
+    type: AWS::S3::Bucket
+    logical_name: MyS3Bucket
+    bucket_name: my-unique-bucket-name-159753159753
+    global_uniqueness_required: true
+
+prerequisites:
+  - aws_account_with_ec2_permissions
+  - aws_account_with_s3_permissions
+  - aws_cli_optional
+  - key_pair_not_included
+
+deployment:
+
+  console:
+    - navigate_to: CloudFormation
+    - select: Create Stack
+    - upload: template.yaml
+    - wait_for: CREATE_COMPLETE
+
+  cli:
+    command: |
+      aws cloudformation deploy \
+        --template-file template.yaml \
+        --stack-name ec2-instance-lab \
+        --capabilities CAPABILITY_NAMED_IAM
+
+security_considerations:
+  ssh_access: 0.0.0.0/0
+  recommendation: restrict_to_your_public_ip
+
+cleanup:
+  cli_command: |
+    aws cloudformation delete-stack \
+      --stack-name ec2-instance-lab
+
+lessons_learned:
+  - cloudformation_resource_dependencies
+  - infrastructure_repeatability
+  - ebs_attachment_via_iac
+  - s3_global_naming_constraints
+  - stack_lifecycle_management
+
+future_improvements:
+  - parameterize_instance_type
+  - parameterize_ami
+  - restrict_ssh_access
+  - add_iam_role
+  - enable_s3_versioning
+  - add_cloudwatch_logging
+
+author:
+  name: Cole Greashaber
+  focus: Cloud + Cybersecurity
+  certifications:
+    - AWS Certified Cloud Practitioner
+    - CompTIA Security+
 ```
-
--  EC2 Instance (`t2.micro`)
--  Security Group (SSH – TCP 22)
--  10 GiB EBS Volume
--  S3 Bucket (globally unique)
-
----
-
-##  Architecture Breakdown
-
-###  Security Group
-
-```yaml
-Type: AWS::EC2::SecurityGroup
-Properties:
-  SecurityGroupIngress:
-    - IpProtocol: tcp
-      FromPort: 22
-      ToPort: 22
-      CidrIp: 0.0.0.0/0
-```
-
----
-
-###  EC2 Instance
-
-```yaml
-Type: AWS::EC2::Instance
-Properties:
-  InstanceType: t2.micro
-  ImageId: ami-0f3caa1cf4417e51b
-```
-
----
-
-###  EBS Volume
-
-```yaml
-Type: AWS::EC2::Volume
-Properties:
-  Size: 10
-  AvailabilityZone: us-east-1a
-```
-
----
-
-###  S3 Bucket
-
-```yaml
-Type: AWS::S3::Bucket
-Properties:
-  BucketName: my-unique-bucket-name-159753159753
-```
-
----
-
-##  Deployment (CLI)
-
-```bash
-aws cloudformation deploy \
-  --template-file template.yaml \
-  --stack-name ec2-instance-lab \
-  --capabilities CAPABILITY_NAMED_IAM
-```
-
----
-
-##  Security Considerations
-
-```diff
-- SSH open to 0.0.0.0/0 (Not recommended for production)
-+ Restrict SSH to your public IP address
-```
-
----
-
-##  Key Takeaways
-
-```bash
-✔ Infrastructure as Code
-✔ Resource dependencies
-✔ EBS attachment via template
-✔ S3 global naming constraints
-✔ Stack lifecycle management
-```
-
----
-
-##  Cleanup
-
-```bash
-aws cloudformation delete-stack --stack-name ec2-instance-lab
-```
-
----
