@@ -1,114 +1,103 @@
-#  AWS CloudFormation Lab: EC2 + EBS + S3
+```yaml
+# ================================================================
+# AWS CLOUDFORMATION LAB
+# EC2 + EBS + S3 INFRASTRUCTURE DEPLOYMENT
+# ================================================================
 
-##  Overview
+project:
+  name: ec2-ebs-s3-cloudformation-lab
+  type: infrastructure-as-code
+  platform: AWS
+  provisioning_tool: CloudFormation
 
-This project provisions AWS infrastructure using **AWS CloudFormation (Infrastructure as Code)**.
+overview:
+  description: >
+    This project provisions AWS infrastructure using a CloudFormation template.
+    It demonstrates EC2 deployment, EBS attachment, S3 provisioning,
+    and basic networking/security configuration.
 
-The template deploys:
+resources_created:
 
--  **EC2 Instance** (`t2.micro`)
--  **Security Group** allowing SSH (TCP 22)
--  **10 GiB EBS Volume** attached to the instance
-- **S3 Bucket** with a globally unique name
+  security_group:
+    type: AWS::EC2::SecurityGroup
+    logical_name: InstanceSecurityGroup
+    inbound_rules:
+      - protocol: tcp
+        port: 22
+        source: 0.0.0.0/0   # ⚠ Open to world (lab only)
 
-This lab demonstrates hands-on experience with:
+  ec2_instance:
+    type: AWS::EC2::Instance
+    logical_name: MyInstance
+    instance_type: t2.micro
+    ami: ami-0f3caa1cf4417e51b  # region dependent
 
-- Infrastructure as Code (IaC)
-- AWS resource dependencies
-- Basic networking and security configuration
-- Block and object storage provisioning
-- Stack lifecycle management
+  ebs_volume:
+    type: AWS::EC2::Volume
+    logical_name: MyVolume
+    size_gib: 10
+    availability_zone: same_as_instance
 
----
+  volume_attachment:
+    type: AWS::EC2::VolumeAttachment
+    logical_name: MyVolumeAttachment
+    device: /dev/sdf
 
-##  Architecture
+  s3_bucket:
+    type: AWS::S3::Bucket
+    logical_name: MyS3Bucket
+    bucket_name: my-unique-bucket-name-159753159753
+    global_uniqueness_required: true
 
-### Resources Created
+prerequisites:
+  - aws_account_with_ec2_permissions
+  - aws_account_with_s3_permissions
+  - aws_cli_optional
+  - key_pair_not_included
 
-**Security Group**  
-- Type: `AWS::EC2::SecurityGroup`  
-- Inbound rule: TCP 22 from `0.0.0.0/0`
+deployment:
 
-**EC2 Instance**  
-- Type: `AWS::EC2::Instance`  
-- AMI: `ami-0f3caa1cf4417e51b` (region dependent)  
-- Instance Type: `t2.micro`
+  console:
+    - navigate_to: CloudFormation
+    - select: Create Stack
+    - upload: template.yaml
+    - wait_for: CREATE_COMPLETE
 
-**EBS Volume**  
-- Type: `AWS::EC2::Volume`  
-- Size: 10 GiB  
-- Attached via `AWS::EC2::VolumeAttachment`  
-- Device: `/dev/sdf`
+  cli:
+    command: |
+      aws cloudformation deploy \
+        --template-file template.yaml \
+        --stack-name ec2-instance-lab \
+        --capabilities CAPABILITY_NAMED_IAM
 
-**S3 Bucket**  
-- Type: `AWS::S3::Bucket`  
-- Bucket name must be globally unique  
+security_considerations:
+  ssh_access: 0.0.0.0/0
+  recommendation: restrict_to_your_public_ip
 
----
+cleanup:
+  cli_command: |
+    aws cloudformation delete-stack \
+      --stack-name ec2-instance-lab
 
-##  Prerequisites
+lessons_learned:
+  - cloudformation_resource_dependencies
+  - infrastructure_repeatability
+  - ebs_attachment_via_iac
+  - s3_global_naming_constraints
+  - stack_lifecycle_management
 
-- AWS account with permissions for:
-  - EC2
-  - EBS
-  - Security Groups
-  - S3
-- AWS CLI (optional)
-- EC2 Key Pair (not included in template)
+future_improvements:
+  - parameterize_instance_type
+  - parameterize_ami
+  - restrict_ssh_access
+  - add_iam_role
+  - enable_s3_versioning
+  - add_cloudwatch_logging
 
->  **Security Note:**  
-> SSH is currently open to `0.0.0.0/0` for lab purposes.  
-> In production, restrict access to your public IP range.
-
----
-
-##  Deployment
-
-### Option 1 – AWS Console
-
-1. Navigate to **CloudFormation**
-2. Select **Create Stack**
-3. Upload `template.yaml`
-4. Deploy and wait for `CREATE_COMPLETE`
-
----
-
-### Option 2 – AWS CLI
-
-```bash
-aws cloudformation deploy \
-  --template-file template.yaml \
-  --stack-name ec2-instance-lab \
-  --capabilities CAPABILITY_NAMED_IAM
+author:
+  name: Cole Greashaber
+  focus: Cloud + Cybersecurity
+  certifications:
+    - AWS Certified Cloud Practitioner
+    - CompTIA Security+
 ```
-
----
-
-##  Key Takeaways
-
-- CloudFormation automatically manages resource dependencies  
-- EBS volumes can be attached declaratively via IaC  
-- Security group exposure should be minimized in production  
-- S3 bucket names must be globally unique  
-- Infrastructure can be repeatedly deployed and destroyed using stack management  
-
----
-
-##  Cleanup
-
-To avoid unnecessary AWS charges:
-
-```bash
-aws cloudformation delete-stack --stack-name ec2-instance-lab
-```
-
-Or delete the stack via the AWS Console.
-
----
-
-##  Author
-
-**Cole Greashaber**  
-MIS – Cybersecurity  
-AWS Certified Cloud Practitioner  
-CompTIA Security+
