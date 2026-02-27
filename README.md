@@ -1,6 +1,6 @@
-# 🚀 AWS CloudFormation Lab: EC2 + EBS + S3
+#  AWS CloudFormation Lab: EC2 + EBS + S3
 
-## 📌 Overview
+##  Overview
 
 This project provisions AWS infrastructure using **AWS CloudFormation (Infrastructure as Code)**.
 
